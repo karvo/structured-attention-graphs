@@ -3,6 +3,7 @@
 import torch
 from torch.autograd import Variable
 from torchvision import models
+import torch.nn as nn
 import cv2
 import sys
 import numpy as np
@@ -14,6 +15,8 @@ import itertools
 import math
 import imageio
 import os
+
+from custom_functions import load_model
 
 use_cuda = torch.cuda.is_available()
 FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
@@ -57,22 +60,23 @@ def tv_norm(input, tv_beta):
     return row_grad + col_grad
 
 
-def load_model_new(use_cuda = 1, model_name = 'resnet50'):
-    if model_name == 'resnet50':
-        model = models.resnet50(pretrained=True)
-    elif model_name == 'vgg19':
-        model = models.vgg19(pretrained=True)
+def load_model_new(model_path, use_cuda = 1, model_name=''):
+    
+    model = load_model(model_path, model_name)
     model.eval()
+
     if use_cuda:
         model.cuda()
+
     for p in model.parameters():
         p.requires_grad = False
-    return model
 
+    return model
 
 def get_topn_categories_probabilities_pairs(img, model, n, use_cuda=use_cuda):
     img = preprocess_image(img, use_cuda, require_grad=False)
     target = torch.nn.Softmax(dim=1)(model(img))
+    print(f"target: {target}")
     target = target.squeeze()
     if use_cuda:
         target = target.data.cpu().numpy()
